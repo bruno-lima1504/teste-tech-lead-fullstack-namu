@@ -1,0 +1,17 @@
+services:
+  mysql:
+    image: mysql:8
+    container_name: namu_sessions_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-namu_sessions}
+      TZ: UTC
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./seed.sql:/docker-entrypoint-initdb.d/seed.sql
+
+volumes:
+  mysql_data:
