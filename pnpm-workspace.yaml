@@ -1,0 +1,25 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Versões únicas das ferramentas compartilhadas entre os pacotes (`"pkg": "catalog:"`).
+catalog:
+  '@eslint/js': ^9.39.5
+  '@types/jest': ^30.0.0
+  '@types/node': ^24.19.2
+  eslint: ^9.39.5
+  eslint-config-prettier: ^10.1.8
+  globals: ^17.13.0
+  jest: ^30.5.2
+  prettier: ^3.9.10
+  ts-jest: ^29.4.15
+  turbo: ^2.11.8
+  typescript: 5.9.3
+  typescript-eslint: ^8.71.2
+
+# pnpm 11+ só executa scripts de instalação dos pacotes liberados aqui. Os três abaixo
+# já trazem binários pré-compilados por plataforma; o script é só fallback de compilação.
+allowBuilds:
+  '@parcel/watcher': false
+  sharp: false
+  unrs-resolver: false

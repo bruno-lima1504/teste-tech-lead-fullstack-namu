@@ -1,3 +1,15 @@
 node_modules/
 .env
 .DS_Store
+
+# build e cache
+dist/
+.next/
+out/
+.turbo/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# logs
+*.log
