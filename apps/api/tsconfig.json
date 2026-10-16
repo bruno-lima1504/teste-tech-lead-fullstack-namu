@@ -1,0 +1,8 @@
+{
+  "extends": "@namu/tsconfig/nest.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "types": ["node", "jest"]
+  },
+  "include": ["src", "test"]
+}
