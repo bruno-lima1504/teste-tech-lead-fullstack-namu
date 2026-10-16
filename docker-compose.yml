@@ -8,7 +8,7 @@ services:
       MYSQL_DATABASE: ${DB_NAME:-namu_sessions}
       TZ: UTC
     ports:
-      - "${DB_PORT:-3306}:3306"
+      - '${DB_PORT:-3306}:3306'
     volumes:
       - mysql_data:/var/lib/mysql
       - ./seed.sql:/docker-entrypoint-initdb.d/seed.sql

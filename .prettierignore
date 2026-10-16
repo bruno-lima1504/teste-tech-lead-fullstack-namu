@@ -1,0 +1,7 @@
+pnpm-lock.yaml
+docs/desafio.md
+**/dist
+**/.next
+**/coverage
+**/.turbo
+**/next-env.d.ts
