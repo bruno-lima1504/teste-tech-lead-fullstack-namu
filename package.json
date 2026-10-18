@@ -9,7 +9,6 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "services:up": "docker compose -f infra/docker-compose.yml up -d",
     "lint": "turbo run lint",
     "lint:structure": "node scripts/validate-structure.mjs",
     "typecheck": "turbo run typecheck",
@@ -18,7 +17,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "docker:up": "docker compose -f infra/docker-compose.yml up --build -d",
-    "docker:down": "docker compose -f infra/docker-compose.yml down"
+    "docker:down": "docker compose -f infra/docker-compose.yml down",
+    "docker:stop": "docker compose -f infra/docker-compose.yml stop"
   },
   "devDependencies": {
     "prettier": "catalog:",
