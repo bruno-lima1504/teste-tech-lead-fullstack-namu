@@ -8,7 +8,10 @@
     },
     "lint": {},
     "typecheck": {},
-    "test": {},
+    "test:unit": {},
+    "test:e2e": {
+      "cache": false
+    },
     "dev": {
       "cache": false,
       "persistent": true

@@ -2,7 +2,10 @@
   "extends": "@namu/tsconfig/nest.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "types": ["node", "jest"]
+    "types": ["node", "jest"],
+    "paths": {
+      "@shared/*": ["./src/modules/shared/*"]
+    }
   },
-  "include": ["src", "test"]
+  "include": ["src", "jest.config.ts"]
 }
