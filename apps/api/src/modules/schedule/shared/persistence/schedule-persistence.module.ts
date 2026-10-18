@@ -4,6 +4,7 @@ import { Module } from '@nestjs/common';
 import { getDataSourceToken, TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigService } from '@shared/config';
 import { ClsModule } from 'nestjs-cls';
+import { BookingRepository } from '../../booking/booking.repository';
 import type { ScheduleConfig } from '../../config';
 import { ProfessionalRepository } from '../../professional/professional.repository';
 import { SlotRepository } from '../../slot/slot.repository';
@@ -11,7 +12,7 @@ import { UserRepository } from '../../user/user.repository';
 import { SCHEDULE_CONNECTION } from './schedule-connection';
 import { dataSourceOptionsFactory } from './typeorm-datasource.factory';
 
-const repositories = [ProfessionalRepository, SlotRepository, UserRepository];
+const repositories = [BookingRepository, ProfessionalRepository, SlotRepository, UserRepository];
 
 @Module({
   imports: [
