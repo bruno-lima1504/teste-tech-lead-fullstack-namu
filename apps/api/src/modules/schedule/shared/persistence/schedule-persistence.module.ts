@@ -5,11 +5,12 @@ import { getDataSourceToken, TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigService } from '@shared/config';
 import { ClsModule } from 'nestjs-cls';
 import type { ScheduleConfig } from '../../config';
+import { ProfessionalRepository } from '../../professional/professional.repository';
 import { UserRepository } from '../../user/user.repository';
 import { SCHEDULE_CONNECTION } from './schedule-connection';
 import { dataSourceOptionsFactory } from './typeorm-datasource.factory';
 
-const repositories = [UserRepository];
+const repositories = [ProfessionalRepository, UserRepository];
 
 @Module({
   imports: [
