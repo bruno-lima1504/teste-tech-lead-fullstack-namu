@@ -13,7 +13,7 @@ apps/
 packages/
   eslint-config/       presets de ESLint (nest, next) compartilhados
   tsconfig/            bases de TypeScript compartilhadas
-seed.sql               schema e dados iniciais fornecidos (não editado)
+infra/                 docker-compose.yml (MySQL) e seed.sql fornecidos (o seed não é editado)
 ```
 
 Monorepo com **pnpm workspaces** e **Turborepo** (orquestra `build`, `lint`, `typecheck` e `test` com cache).
