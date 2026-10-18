@@ -2,7 +2,7 @@
 
 Aplicação para agendar sessões com especialistas de bem-estar (psicologia, nutrição, educação física e yoga). O enunciado original está em [docs/desafio.md](docs/desafio.md).
 
-> API (Parte 1) e tela web (Parte 2) concluídas. O cancelamento (`DELETE /bookings/:id` e o botão na tela) chega por Pull Request.
+> API (Parte 1) e tela web (Parte 2) concluídas, inclusive o cancelamento (`DELETE /bookings/:id` e o botão na tela), entregue por Pull Request.
 
 ## Funcionalidades
 
@@ -13,6 +13,7 @@ Aplicação para agendar sessões com especialistas de bem-estar (psicologia, nu
 | `GET /professionals?specialty=`                | Profissionais ativos, por nome, com filtro opcional por especialidade (`psicologia`, `nutricao`, `educacao-fisica`, `yoga`)                                                       |
 | `GET /professionals/:id/slots?date=YYYY-MM-DD` | Horários livres do profissional no dia informado, no calendário de São Paulo: ainda não começaram e não têm agendamento confirmado                                                |
 | `POST /bookings` `{ "slotId": 4 }`             | Agenda o horário: só futuros, de profissionais ativos, um confirmado por horário e sem sobreposição com outra sessão confirmada do usuário, inclusive com requisições simultâneas |
+| `DELETE /bookings/:id`                         | Cancela a sessão, só pelo dono e até 24 horas antes do início; o horário volta a ficar livre                                                                                      |
 | `GET /me/bookings`                             | Sessões do usuário (confirmadas e canceladas), por ordem de início                                                                                                                |
 
 - O usuário é identificado pelo header `X-User-Id`, já que a autenticação está fora do escopo.
@@ -27,7 +28,7 @@ Em http://localhost:3001, uma página só:
 - **Profissional:** filtro por especialidade e escolha do profissional.
 - **Data e horário:** a data começa em hoje e não aceita dia passado. Os horários livres aparecem no horário de Brasília.
 - **Confirmação:** a mensagem da API aparece com um título por código ("Horário ocupado", "Conflito de horário"…), e a grade de horários recarrega.
-- **Minhas sessões:** as sessões do usuário, confirmadas e canceladas.
+- **Minhas sessões:** as sessões do usuário, confirmadas e canceladas. As confirmadas têm o botão "Cancelar", que pede confirmação. A regra das 24 horas fica com a API: fora do prazo, a recusa aparece no item como "Fora do prazo de cancelamento". Cancelada, a sessão muda de status e o horário volta à grade.
 
 ### Erros da API
 
@@ -41,16 +42,19 @@ Todo erro sai no mesmo formato, com um `code` estável para o cliente tratar e u
 }
 ```
 
-| Status | `code`                                       | Quando                                                           |
-| ------ | -------------------------------------------- | ---------------------------------------------------------------- |
-| 400    | `VALIDATION_ERROR` (com `details` por campo) | corpo, query ou parâmetro inválido (ex.: `date=2026-02-30`)      |
-| 400    | `INVALID_USER_ID`                            | `X-User-Id` malformado (`abc`, `0`, `-1`, `1.5`)                 |
-| 401    | `MISSING_USER_ID` / `UNKNOWN_USER`           | header ausente / usuário que não existe                          |
-| 404    | `PROFESSIONAL_NOT_FOUND` / `SLOT_NOT_FOUND`  | profissional ou horário que não existe                           |
-| 409    | `SLOT_UNAVAILABLE`                           | o horário já tem agendamento confirmado                          |
-| 409    | `BOOKING_OVERLAP`                            | o usuário já tem sessão confirmada que coincide com o horário    |
-| 422    | `SLOT_IN_PAST` / `PROFESSIONAL_INACTIVE`     | horário que já começou / profissional inativo                    |
-| 500    | `INTERNAL_ERROR`                             | erro inesperado: logado com o contexto, sem detalhes na resposta |
+| Status | `code`                                       | Quando                                                                   |
+| ------ | -------------------------------------------- | ------------------------------------------------------------------------ |
+| 400    | `VALIDATION_ERROR` (com `details` por campo) | corpo, query ou parâmetro inválido (ex.: `date=2026-02-30`)              |
+| 400    | `INVALID_USER_ID`                            | `X-User-Id` malformado (`abc`, `0`, `-1`, `1.5`)                         |
+| 401    | `MISSING_USER_ID` / `UNKNOWN_USER`           | header ausente / usuário que não existe                                  |
+| 404    | `PROFESSIONAL_NOT_FOUND` / `SLOT_NOT_FOUND`  | profissional ou horário que não existe                                   |
+| 404    | `BOOKING_NOT_FOUND`                          | sessão que não existe ou é de outro usuário (a resposta não revela qual) |
+| 409    | `SLOT_UNAVAILABLE`                           | o horário já tem agendamento confirmado                                  |
+| 409    | `BOOKING_OVERLAP`                            | o usuário já tem sessão confirmada que coincide com o horário            |
+| 409    | `BOOKING_ALREADY_CANCELLED`                  | a sessão já foi cancelada                                                |
+| 422    | `SLOT_IN_PAST` / `PROFESSIONAL_INACTIVE`     | horário que já começou / profissional inativo                            |
+| 422    | `CANCELLATION_WINDOW_CLOSED`                 | cancelamento com menos de 24 horas para o início da sessão               |
+| 500    | `INTERNAL_ERROR`                             | erro inesperado: logado com o contexto, sem detalhes na resposta         |
 
 ## Como executar
 
@@ -73,6 +77,7 @@ curl localhost:3000/professionals
 curl "localhost:3000/professionals/1/slots?date=$(date -d '+2 days' +%F)"   # macOS: date -v+2d +%F
 curl -X POST localhost:3000/bookings -H 'X-User-Id: 1' -H 'Content-Type: application/json' -d '{"slotId": 9}'
 curl localhost:3000/me/bookings -H 'X-User-Id: 1'
+curl -X DELETE localhost:3000/bookings/2 -H 'X-User-Id: 2'
 ```
 
 ### Desenvolvimento local
@@ -108,9 +113,9 @@ Os comandos de banco rodam na api (`pnpm --filter @namu/api <comando>`) e leem o
 
 ### Testes
 
-- **Unitários** (`pnpm test:unit`): cobrem as regras de agendamento do `BookingService`, com repositórios simulados e relógio fixo, e o cálculo do dia de São Paulo, inclusive em datas históricas de horário de verão.
+- **Unitários** (`pnpm test:unit`): cobrem as regras de agendamento e cancelamento do `BookingService`, com repositórios simulados e relógio fixo, e o cálculo do dia de São Paulo, inclusive em datas históricas de horário de verão.
 - **E2E** (`pnpm test:e2e`, com o MySQL do compose no ar): cobrem cada endpoint contra o MySQL de verdade, as constraints do banco e a disputa por horário com requisições simultâneas. Cada suíte recria do zero um banco próprio, `<DB_NAME>_test`, com o seed e as migrations. O banco de desenvolvimento não é tocado.
-- **Tela:** sem testes automatizados, por decisão de escopo. O fluxo de agendamento e os casos de erro foram verificados no navegador.
+- **Tela:** sem testes automatizados, por decisão de escopo. Os fluxos de agendamento e cancelamento e os casos de erro foram verificados no navegador.
 - **CI** (GitHub Actions, a cada push e pull request): roda formatação, lint, estrutura, typecheck e testes unitários, e também os e2e contra um MySQL no próprio job.
 
 ## Estrutura

@@ -20,6 +20,8 @@ describe('POST /bookings', () => {
     db('bookings').where({ slot_id: slotId, status: BookingStatus.Confirmed }).select('user_id');
 
   beforeAll(async () => {
+    // O app conecta ao banco ao subir: num MySQL novo (como o do CI), ele ainda não existe.
+    await resetTestDatabase();
     app = await createScheduleApp();
     db = createTestDbClient();
   });

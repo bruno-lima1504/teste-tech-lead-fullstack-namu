@@ -12,6 +12,8 @@ import { BookingStatus } from './booking.types';
 
 const CONFIRMED_PER_SLOT_INDEX = 'uq_bookings_confirmed_slot';
 
+export type BookingWithSlot = Booking & { slot: Slot };
+
 const isDuplicateOn = (error: unknown, index: string): boolean =>
   error instanceof QueryFailedError &&
   (error.driverError as { code?: string }).code === 'ER_DUP_ENTRY' &&
@@ -62,6 +64,25 @@ export class BookingRepository extends DefaultTypeOrmRepository<Booking> {
       }
       throw error;
     }
+  }
+
+  /**
+   * SELECT … FOR UPDATE com o horário junto: enfileira cancelamentos do mesmo agendamento
+   * e o cancelamento com um novo agendamento no mesmo horário.
+   */
+  lockByIdWithSlotAndProfessional(id: number): Promise<BookingWithSlot | null> {
+    return this.findOne({
+      where: { id },
+      relations: { slot: { professional: true } },
+      lock: { mode: 'pessimistic_write' },
+    }) as Promise<BookingWithSlot | null>;
+  }
+
+  /** Ao cancelar, a coluna gerada confirmed_slot_id vira NULL e o horário fica livre de novo. */
+  async markCancelled<T extends Booking>(booking: T): Promise<T> {
+    const cancelledAt = startOfSecond(new Date());
+    await this.repository.update(booking.id, { status: BookingStatus.Cancelled, cancelledAt });
+    return Object.assign(booking, { status: BookingStatus.Cancelled, cancelledAt });
   }
 
   findByUserWithSlotAndProfessional(userId: number): Promise<Booking[]> {

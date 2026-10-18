@@ -1,9 +1,9 @@
-import { Body, Controller, Get, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, Param, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Authenticated, CurrentUserId } from '@shared/auth';
 import { ApiErrors } from '@shared/http';
 import { plainToInstance } from 'class-transformer';
-import { BookingResponseDto, CreateBookingDto } from './booking.dto';
+import { BookingParamsDto, BookingResponseDto, CreateBookingDto } from './booking.dto';
 import { BookingService } from './booking.service';
 
 @ApiTags('agendamentos')
@@ -26,6 +26,23 @@ export class BookingController {
     @Body() body: CreateBookingDto,
   ): Promise<BookingResponseDto> {
     const booking = await this.bookingService.create(userId, body.slotId);
+    return plainToInstance(BookingResponseDto, booking, { excludeExtraneousValues: true });
+  }
+
+  @Delete('bookings/:id')
+  @ApiOperation({ summary: 'Cancela uma sessão do usuário, até 24 horas antes do início' })
+  @ApiErrors({
+    [HttpStatus.BAD_REQUEST]: ['VALIDATION_ERROR', 'INVALID_USER_ID'],
+    [HttpStatus.UNAUTHORIZED]: ['MISSING_USER_ID', 'UNKNOWN_USER'],
+    [HttpStatus.NOT_FOUND]: ['BOOKING_NOT_FOUND'],
+    [HttpStatus.CONFLICT]: ['BOOKING_ALREADY_CANCELLED'],
+    [HttpStatus.UNPROCESSABLE_ENTITY]: ['CANCELLATION_WINDOW_CLOSED'],
+  })
+  async cancel(
+    @CurrentUserId() userId: number,
+    @Param() params: BookingParamsDto,
+  ): Promise<BookingResponseDto> {
+    const booking = await this.bookingService.cancel(userId, params.id);
     return plainToInstance(BookingResponseDto, booking, { excludeExtraneousValues: true });
   }
 

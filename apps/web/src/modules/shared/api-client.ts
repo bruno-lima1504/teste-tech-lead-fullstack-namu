@@ -15,7 +15,7 @@ export class ApiError extends Error {
 }
 
 interface RequestOptions {
-  method?: 'GET' | 'POST';
+  method?: 'GET' | 'POST' | 'DELETE';
   userId?: number;
   body?: unknown;
   query?: Record<string, string | undefined>;

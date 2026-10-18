@@ -5,12 +5,20 @@ import { SaoPauloIso } from '../shared/schedule.dto';
 import { BookingStatus } from './booking.types';
 
 const SLOT_ID_MESSAGE = 'deve ser o id de um horário (inteiro positivo)';
+const BOOKING_ID_MESSAGE = 'deve ser o id de uma sessão (inteiro positivo)';
 
 export class CreateBookingDto {
   /** @example 4 */
   @IsInt({ message: SLOT_ID_MESSAGE })
   @IsPositive({ message: SLOT_ID_MESSAGE })
   slotId: number;
+}
+
+export class BookingParamsDto {
+  @Type(() => Number)
+  @IsInt({ message: BOOKING_ID_MESSAGE })
+  @IsPositive({ message: BOOKING_ID_MESSAGE })
+  id: number;
 }
 
 export class BookingProfessionalDto {

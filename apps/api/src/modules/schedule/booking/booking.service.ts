@@ -2,6 +2,7 @@
 import { Transactional } from '@nestjs-cls/transactional';
 import { TransactionalAdapterTypeOrm } from '@nestjs-cls/transactional-adapter-typeorm';
 import { Injectable } from '@nestjs/common';
+import { subHours } from 'date-fns';
 import { ProfessionalInactiveException } from '../professional/professional.exception';
 import { ProfessionalRepository } from '../professional/professional.repository';
 import { SCHEDULE_CONNECTION } from '../shared/persistence/schedule-connection';
@@ -10,8 +11,15 @@ import { SlotRepository } from '../slot/slot.repository';
 import { UnknownUserException } from '../user/user.exception';
 import { UserRepository } from '../user/user.repository';
 import { Booking } from './booking.entity';
-import { BookingOverlapException, SlotUnavailableException } from './booking.exception';
+import {
+  BookingAlreadyCancelledException,
+  BookingNotFoundException,
+  BookingOverlapException,
+  CancellationWindowClosedException,
+  SlotUnavailableException,
+} from './booking.exception';
 import { BookingRepository } from './booking.repository';
+import { BookingStatus, CANCELLATION_NOTICE_HOURS } from './booking.types';
 
 @Injectable()
 export class BookingService {
@@ -56,6 +64,32 @@ export class BookingService {
     const booking = await this.bookingRepository.createConfirmed(userId, slot.id);
     booking.slot = { ...slot, professional };
     return booking;
+  }
+
+  @Transactional<TransactionalAdapterTypeOrm>(SCHEDULE_CONNECTION, {
+    isolationLevel: 'READ COMMITTED',
+  })
+  async cancel(userId: number, bookingId: number): Promise<Booking> {
+    if (!(await this.userRepository.existsById(userId))) {
+      throw new UnknownUserException();
+    }
+
+    // Sessão de outra pessoa responde como inexistente: não revela que o id existe.
+    const booking = await this.bookingRepository.lockByIdWithSlotAndProfessional(bookingId);
+    if (!booking || booking.userId !== userId) {
+      throw new BookingNotFoundException();
+    }
+
+    if (booking.status === BookingStatus.Cancelled) {
+      throw new BookingAlreadyCancelledException();
+    }
+
+    // Exatamente 24 horas antes ainda pode.
+    if (Date.now() > subHours(booking.slot.startsAt, CANCELLATION_NOTICE_HOURS).getTime()) {
+      throw new CancellationWindowClosedException();
+    }
+
+    return this.bookingRepository.markCancelled(booking);
   }
 
   async listForUser(userId: number): Promise<Booking[]> {
