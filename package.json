@@ -11,6 +11,7 @@
     "dev": "turbo run dev",
     "services:up": "docker compose -f infra/docker-compose.yml up -d",
     "lint": "turbo run lint",
+    "lint:structure": "node scripts/validate-structure.mjs",
     "typecheck": "turbo run typecheck",
     "test:unit": "turbo run test:unit",
     "test:e2e": "turbo run test:e2e",
