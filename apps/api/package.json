@@ -10,15 +10,26 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test:unit": "jest --selectProjects unit --passWithNoTests",
-    "test:e2e": "jest --selectProjects e2e --runInBand --passWithNoTests"
+    "test:e2e": "jest --selectProjects e2e --runInBand --passWithNoTests",
+    "typeorm": "node --env-file-if-exists=../../.env -r ts-node/register/transpile-only -r tsconfig-paths/register node_modules/typeorm/cli.js",
+    "db:generate": "pnpm typeorm migration:generate src/modules/schedule/shared/persistence/migration/migration -d src/modules/schedule/shared/persistence/typeorm-datasource.ts",
+    "db:create": "pnpm typeorm migration:create src/modules/schedule/shared/persistence/migration/migration",
+    "db:migrate": "pnpm typeorm migration:run -d src/modules/schedule/shared/persistence/typeorm-datasource.ts",
+    "db:revert": "pnpm typeorm migration:revert -d src/modules/schedule/shared/persistence/typeorm-datasource.ts"
   },
   "dependencies": {
+    "@nestjs-cls/transactional": "^4.0.1",
+    "@nestjs-cls/transactional-adapter-typeorm": "^2.0.1",
     "@nestjs/common": "^11.1.0",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.1.0",
     "@nestjs/platform-express": "^11.1.0",
+    "@nestjs/typeorm": "^11.0.3",
+    "mysql2": "^3.24.6",
+    "nestjs-cls": "^7.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "typeorm": "^0.3.31",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -37,6 +48,7 @@
     "supertest": "^7.0.0",
     "ts-jest": "catalog:",
     "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "catalog:"
   }
 }
