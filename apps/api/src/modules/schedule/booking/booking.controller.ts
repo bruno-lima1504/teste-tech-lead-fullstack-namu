@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { Authenticated, CurrentUserId } from '@shared/auth';
 import { plainToInstance } from 'class-transformer';
 import { BookingResponseDto, CreateBookingDto } from './booking.dto';
@@ -16,5 +16,11 @@ export class BookingController {
   ): Promise<BookingResponseDto> {
     const booking = await this.bookingService.create(userId, body.slotId);
     return plainToInstance(BookingResponseDto, booking, { excludeExtraneousValues: true });
+  }
+
+  @Get('me/bookings')
+  async listMine(@CurrentUserId() userId: number): Promise<BookingResponseDto[]> {
+    const bookings = await this.bookingService.listForUser(userId);
+    return plainToInstance(BookingResponseDto, bookings, { excludeExtraneousValues: true });
   }
 }

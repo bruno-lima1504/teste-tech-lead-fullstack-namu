@@ -57,4 +57,11 @@ export class BookingService {
     booking.slot = { ...slot, professional };
     return booking;
   }
+
+  async listForUser(userId: number): Promise<Booking[]> {
+    if (!(await this.userRepository.existsById(userId))) {
+      throw new UnknownUserException();
+    }
+    return this.bookingRepository.findByUserWithSlotAndProfessional(userId);
+  }
 }

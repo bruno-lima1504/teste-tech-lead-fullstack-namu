@@ -63,4 +63,12 @@ export class BookingRepository extends DefaultTypeOrmRepository<Booking> {
       throw error;
     }
   }
+
+  findByUserWithSlotAndProfessional(userId: number): Promise<Booking[]> {
+    return this.find({
+      where: { userId },
+      relations: { slot: { professional: true } },
+      order: { slot: { startsAt: 'ASC' }, id: 'ASC' },
+    });
+  }
 }
