@@ -45,5 +45,19 @@ pnpm dev               # api em http://localhost:3000 e web em http://localhost:
 | `pnpm lint`         | ESLint em todos os pacotes                  |
 | `pnpm typecheck`    | checagem de tipos em todos os pacotes       |
 | `pnpm test:unit`    | testes unitários (Jest) de todos os pacotes |
+| `pnpm test:e2e`     | testes e2e da api contra o MySQL            |
 | `pnpm build`        | build de produção da api e do web           |
 | `pnpm format:check` | verifica a formatação (Prettier)            |
+
+Os testes e2e precisam do MySQL do compose (`docker compose -f infra/docker-compose.yml up -d mysql`). Cada suíte recria do zero um banco próprio, `<DB_NAME>_test`, com o `infra/seed.sql` e as migrations; o banco de desenvolvimento não é tocado.
+
+### Banco de dados
+
+O schema inicial vem do `infra/seed.sql` (não editado) e evolui por migrations do TypeORM em `apps/api/src/modules/schedule/shared/persistence/migration/`, com `up` e `down`. Os comandos rodam na api (`pnpm --filter @namu/api <comando>`) e leem o `.env` da raiz:
+
+| Comando       | O que faz                                                            |
+| ------------- | -------------------------------------------------------------------- |
+| `db:migrate`  | aplica as migrations pendentes                                       |
+| `db:revert`   | desfaz a última migration                                            |
+| `db:generate` | gera uma migration a partir da diferença entre entidades e banco     |
+| `db:create`   | cria uma migration vazia (para o que o TypeORM não gera, como CHECK) |

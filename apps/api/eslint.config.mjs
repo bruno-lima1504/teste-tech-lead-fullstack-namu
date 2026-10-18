@@ -29,4 +29,13 @@ export default defineConfig(
       ],
     },
   },
+  {
+    files: ['src/**/__test__/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-enum-comparison': 'off',
+    },
+  },
 );

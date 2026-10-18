@@ -18,6 +18,7 @@ const config: Config = {
       ...common,
       displayName: 'e2e',
       testMatch: ['<rootDir>/src/modules/*/__test__/e2e/*.e2e-spec.ts'],
+      setupFiles: ['<rootDir>/src/modules/schedule/__test__/support/test-env.ts'],
     },
   ],
 };
