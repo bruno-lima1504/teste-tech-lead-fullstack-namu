@@ -15,6 +15,7 @@ import { SPECIALTY_META } from '../professional/professional-picker';
 import { SPECIALTY_LABELS } from '../professional/professional.types';
 import { useMyBookings } from './booking.queries';
 import type { BookingStatus } from './booking.types';
+import { CancelBooking } from './cancel-booking';
 
 const STATUS = {
   confirmed: {
@@ -178,6 +179,8 @@ export function MyBookings() {
                             {cancelledAt && ` em ${formatDate(cancelledAt)}`}
                           </Badge>
                         </div>
+
+                        {!isCancelled && <CancelBooking bookingId={id} />}
                       </div>
                     </li>
                   );

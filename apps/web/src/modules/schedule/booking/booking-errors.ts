@@ -7,8 +7,11 @@ const TITLES: Record<string, string> = {
   SLOT_IN_PAST: 'Horário indisponível',
   SLOT_NOT_FOUND: 'Horário indisponível',
   PROFESSIONAL_INACTIVE: 'Profissional indisponível',
+  BOOKING_NOT_FOUND: 'Sessão não encontrada',
+  BOOKING_ALREADY_CANCELLED: 'Sessão já cancelada',
+  CANCELLATION_WINDOW_CLOSED: 'Fora do prazo de cancelamento',
   NETWORK_ERROR: 'Sem conexão com o servidor',
 };
 
-export const bookingErrorTitle = (error: Error): string =>
-  (error instanceof ApiError && TITLES[error.code]) || 'Não foi possível agendar';
+export const bookingErrorTitle = (error: Error, fallback = 'Não foi possível agendar'): string =>
+  (error instanceof ApiError && TITLES[error.code]) || fallback;
