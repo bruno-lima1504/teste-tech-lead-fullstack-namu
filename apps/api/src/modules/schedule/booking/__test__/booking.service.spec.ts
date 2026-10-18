@@ -13,19 +13,29 @@ import { SlotInPastException, SlotNotFoundException } from '../../slot/slot.exce
 import { SlotRepository } from '../../slot/slot.repository';
 import { UnknownUserException } from '../../user/user.exception';
 import { UserRepository } from '../../user/user.repository';
-import { BookingOverlapException, SlotUnavailableException } from '../booking.exception';
+import { addHours, addMinutes } from 'date-fns';
+import {
+  BookingAlreadyCancelledException,
+  BookingNotFoundException,
+  BookingOverlapException,
+  CancellationWindowClosedException,
+  SlotUnavailableException,
+} from '../booking.exception';
 import { BookingRepository } from '../booking.repository';
 import { BookingService } from '../booking.service';
+import { BookingStatus } from '../booking.types';
 
 describe('BookingService', () => {
   const now = new Date('2026-10-17T12:00:00Z');
-  const userRepository = { lockById: jest.fn() };
+  const userRepository = { lockById: jest.fn(), existsById: jest.fn() };
   const slotRepository = { lockById: jest.fn() };
   const professionalRepository = { findOneById: jest.fn() };
   const bookingRepository = {
     hasConfirmedForSlot: jest.fn(),
     userHasConfirmedOverlapping: jest.fn(),
     createConfirmed: jest.fn(),
+    lockByIdWithSlotAndProfessional: jest.fn(),
+    markCancelled: jest.fn(),
   };
   let service: BookingService;
 
@@ -124,6 +134,62 @@ describe('BookingService', () => {
       await expect(service.create(1, 4)).rejects.toBeInstanceOf(BookingOverlapException);
       expect(bookingRepository.userHasConfirmedOverlapping).toHaveBeenCalledWith(1, slot);
       expect(bookingRepository.createConfirmed).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('cancel', () => {
+    // Sessão confirmada da usuária 1, daqui a 2 dias; cada teste quebra uma regra.
+    const bookingStartingIn = (hours: number, minutes = 0) =>
+      bookingFactory.build({
+        id: 20,
+        userId: 1,
+        status: BookingStatus.Confirmed,
+        slot: slotFactory.build({ startsAt: addMinutes(addHours(now, hours), minutes) }),
+      });
+
+    beforeEach(() => {
+      userRepository.existsById.mockResolvedValue(true);
+      bookingRepository.lockByIdWithSlotAndProfessional.mockResolvedValue(bookingStartingIn(48));
+      bookingRepository.markCancelled.mockImplementation((booking) =>
+        Promise.resolve({ ...booking, status: BookingStatus.Cancelled }),
+      );
+    });
+
+    it('cancela a sessão do próprio usuário', async () => {
+      await expect(service.cancel(1, 20)).resolves.toMatchObject({
+        id: 20,
+        status: BookingStatus.Cancelled,
+      });
+    });
+
+    it('responde como inexistente para a sessão de outro usuário', async () => {
+      await expect(service.cancel(2, 20)).rejects.toBeInstanceOf(BookingNotFoundException);
+      expect(bookingRepository.markCancelled).not.toHaveBeenCalled();
+    });
+
+    it('recusa sessão já cancelada', async () => {
+      bookingRepository.lockByIdWithSlotAndProfessional.mockResolvedValue(
+        bookingFactory.build({ id: 20, userId: 1, status: BookingStatus.Cancelled }),
+      );
+
+      await expect(service.cancel(1, 20)).rejects.toBeInstanceOf(BookingAlreadyCancelledException);
+    });
+
+    it('cancela com exatamente 24 horas de antecedência', async () => {
+      bookingRepository.lockByIdWithSlotAndProfessional.mockResolvedValue(bookingStartingIn(24));
+
+      await expect(service.cancel(1, 20)).resolves.toMatchObject({
+        status: BookingStatus.Cancelled,
+      });
+    });
+
+    it('recusa com menos de 24 horas de antecedência', async () => {
+      bookingRepository.lockByIdWithSlotAndProfessional.mockResolvedValue(
+        bookingStartingIn(23, 59),
+      );
+
+      await expect(service.cancel(1, 20)).rejects.toBeInstanceOf(CancellationWindowClosedException);
+      expect(bookingRepository.markCancelled).not.toHaveBeenCalled();
     });
   });
 });
