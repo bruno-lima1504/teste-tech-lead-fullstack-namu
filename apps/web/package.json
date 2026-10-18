@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "next start -p 3001",
     "lint": "eslint .",
-    "typecheck": "next typegen && tsc --noEmit",
-    "test:unit": "jest"
+    "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
     "next": "16.4.1",
@@ -19,16 +18,10 @@
     "@namu/eslint-config": "workspace:*",
     "@namu/tsconfig": "workspace:*",
     "@tailwindcss/turbopack": "^4",
-    "@testing-library/dom": "^10.4.2",
-    "@testing-library/jest-dom": "^7.0.1",
-    "@testing-library/react": "^16.3.3",
-    "@types/jest": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "catalog:",
-    "jest": "catalog:",
-    "jest-environment-jsdom": "^30.5.2",
     "tailwindcss": "^4",
     "typescript": "catalog:"
   }
