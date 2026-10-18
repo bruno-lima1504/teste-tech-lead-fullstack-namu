@@ -21,5 +21,6 @@ catalog:
 # já trazem binários pré-compilados por plataforma; o script é só fallback de compilação.
 allowBuilds:
   '@parcel/watcher': false
+  '@scarf/scarf': false
   sharp: false
   unrs-resolver: false

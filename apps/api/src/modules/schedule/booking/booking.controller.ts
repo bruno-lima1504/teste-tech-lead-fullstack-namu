@@ -1,15 +1,26 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Post } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Authenticated, CurrentUserId } from '@shared/auth';
+import { ApiErrors } from '@shared/http';
 import { plainToInstance } from 'class-transformer';
 import { BookingResponseDto, CreateBookingDto } from './booking.dto';
 import { BookingService } from './booking.service';
 
+@ApiTags('agendamentos')
 @Controller()
 @Authenticated()
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
   @Post('bookings')
+  @ApiOperation({ summary: 'Agenda um horário para o usuário' })
+  @ApiErrors({
+    [HttpStatus.BAD_REQUEST]: ['VALIDATION_ERROR', 'INVALID_USER_ID'],
+    [HttpStatus.UNAUTHORIZED]: ['MISSING_USER_ID', 'UNKNOWN_USER'],
+    [HttpStatus.NOT_FOUND]: ['SLOT_NOT_FOUND'],
+    [HttpStatus.CONFLICT]: ['SLOT_UNAVAILABLE', 'BOOKING_OVERLAP'],
+    [HttpStatus.UNPROCESSABLE_ENTITY]: ['SLOT_IN_PAST', 'PROFESSIONAL_INACTIVE'],
+  })
   async create(
     @CurrentUserId() userId: number,
     @Body() body: CreateBookingDto,
@@ -19,6 +30,11 @@ export class BookingController {
   }
 
   @Get('me/bookings')
+  @ApiOperation({ summary: 'Sessões do usuário (confirmadas e canceladas), por início' })
+  @ApiErrors({
+    [HttpStatus.BAD_REQUEST]: ['INVALID_USER_ID'],
+    [HttpStatus.UNAUTHORIZED]: ['MISSING_USER_ID', 'UNKNOWN_USER'],
+  })
   async listMine(@CurrentUserId() userId: number): Promise<BookingResponseDto[]> {
     const bookings = await this.bookingService.listForUser(userId);
     return plainToInstance(BookingResponseDto, bookings, { excludeExtraneousValues: true });
