@@ -26,6 +26,8 @@ describe('POST /bookings com requisições simultâneas', () => {
       .send({ slotId });
 
   beforeAll(async () => {
+    // O app conecta ao banco ao subir: num MySQL novo (como o do CI), ele ainda não existe.
+    await resetTestDatabase();
     app = await createScheduleApp();
     // Servidor escutando de verdade: sem isso o supertest abriria uma porta por requisição.
     await app.listen(0);

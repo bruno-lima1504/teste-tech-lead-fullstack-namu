@@ -20,6 +20,8 @@ describe('DELETE /bookings/:id', () => {
   };
 
   beforeAll(async () => {
+    // O app conecta ao banco ao subir: num MySQL novo (como o do CI), ele ainda não existe.
+    await resetTestDatabase();
     app = await createScheduleApp();
     db = createTestDbClient();
   });
