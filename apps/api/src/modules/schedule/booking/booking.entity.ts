@@ -5,7 +5,8 @@ import { BookingStatus } from './booking.types';
 
 // Nomes de FK e índice iguais aos que o MySQL gerou para o seed: assim o db:generate não os recria.
 @Index('slot_id', ['slotId'])
-@Index('user_id', ['userId'])
+@Index('idx_bookings_user_status', ['userId', 'status'])
+@Index('uq_bookings_confirmed_slot', ['confirmedSlotId'], { unique: true })
 @Entity({ name: 'bookings' })
 export class Booking {
   @PrimaryGeneratedColumn({ type: 'int' })
@@ -38,4 +39,16 @@ export class Booking {
 
   @Column({ name: 'cancelled_at', type: 'datetime', nullable: true, comment: 'UTC' })
   cancelledAt: Date | null;
+
+  @Column({
+    name: 'confirmed_slot_id',
+    type: 'int',
+    nullable: true,
+    generatedType: 'STORED',
+    asExpression: `IF(status = '${BookingStatus.Confirmed}', slot_id, NULL)`,
+    insert: false,
+    update: false,
+    select: false,
+  })
+  confirmedSlotId: number | null;
 }

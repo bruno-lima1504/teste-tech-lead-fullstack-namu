@@ -1,8 +1,7 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Professional } from '../professional/professional.entity';
 
-// Nome do índice que o MySQL criou para a FK no seed: assim o db:generate não o recria.
-@Index('professional_id', ['professionalId'])
+@Index('uq_slots_professional_starts', ['professionalId', 'startsAt'], { unique: true })
 @Entity({ name: 'availability_slots' })
 export class Slot {
   @PrimaryGeneratedColumn({ type: 'int' })
