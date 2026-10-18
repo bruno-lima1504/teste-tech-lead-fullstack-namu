@@ -2,9 +2,11 @@
 
 Aplicação para agendar sessões com especialistas de bem-estar (psicologia, nutrição, educação física e yoga). O enunciado original está em [docs/desafio.md](docs/desafio.md).
 
-> Parte 1 (API) concluída. O cancelamento (`DELETE /bookings/:id`) chega por Pull Request, e o frontend (Parte 2) está em construção em `apps/web`.
+> API (Parte 1) e tela web (Parte 2) concluídas. O cancelamento (`DELETE /bookings/:id` e o botão na tela) chega por Pull Request.
 
 ## Funcionalidades
+
+### API
 
 | Rota                                           | O que faz                                                                                                                                                                         |
 | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -17,7 +19,17 @@ Aplicação para agendar sessões com especialistas de bem-estar (psicologia, nu
 - Os horários ficam em UTC no banco. A API devolve todos eles em ISO 8601 com o offset de São Paulo, por exemplo `2026-10-19T14:00:00-03:00`.
 - A documentação OpenAPI fica em [`/docs`](http://localhost:3000/docs), com a especificação em `/docs-json`.
 
-### Erros
+### Tela
+
+Em http://localhost:3001, uma página só:
+
+- **Usuário:** um seletor com os quatro usuários do seed. A escolha vai no header `X-User-Id`.
+- **Profissional:** filtro por especialidade e escolha do profissional.
+- **Data e horário:** a data começa em hoje e não aceita dia passado. Os horários livres aparecem no horário de Brasília.
+- **Confirmação:** a mensagem da API aparece com um título por código ("Horário ocupado", "Conflito de horário"…), e a grade de horários recarrega.
+- **Minhas sessões:** as sessões do usuário, confirmadas e canceladas.
+
+### Erros da API
 
 Todo erro sai no mesmo formato, com um `code` estável para o cliente tratar e uma mensagem em português para exibir:
 
@@ -42,13 +54,15 @@ Todo erro sai no mesmo formato, com um `code` estável para o cliente tratar e u
 
 ## Como executar
 
-### Com Docker (um comando)
+### Backend com Docker (um comando)
 
 ```bash
 docker compose -f infra/docker-compose.yml up --build    # ou: pnpm docker:up
 ```
 
 O comando sobe o MySQL com o `infra/seed.sql` e a API em http://localhost:3000. A API espera o banco ficar pronto, aplica as migrations pendentes e então começa a responder.
+
+Para usar a tela com esse backend, rode o web localmente: `pnpm install && pnpm --filter @namu/web dev`, em http://localhost:3001. Ele repassa `/api` para a API em `localhost:3000`.
 
 As variáveis têm os valores do `.env.example` por padrão. Para usar outros, passe `--env-file .env`. Para recomeçar do seed, rode `docker compose -f infra/docker-compose.yml down -v`.
 
@@ -78,7 +92,7 @@ pnpm dev                                              # api em http://localhost:
 | `pnpm lint`           | ESLint em todos os pacotes                            |
 | `pnpm lint:structure` | confere a organização por agregado dos módulos da api |
 | `pnpm typecheck`      | checagem de tipos em todos os pacotes                 |
-| `pnpm test:unit`      | testes unitários de todos os pacotes                  |
+| `pnpm test:unit`      | testes unitários (da api)                             |
 | `pnpm test:e2e`       | testes e2e da api contra o MySQL                      |
 | `pnpm build`          | build de produção da api e do web                     |
 | `pnpm format:check`   | verifica a formatação (Prettier)                      |
@@ -96,6 +110,7 @@ Os comandos de banco rodam na api (`pnpm --filter @namu/api <comando>`) e leem o
 
 - **Unitários** (`pnpm test:unit`): cobrem as regras de agendamento do `BookingService`, com repositórios simulados e relógio fixo, e o cálculo do dia de São Paulo, inclusive em datas históricas de horário de verão.
 - **E2E** (`pnpm test:e2e`, com o MySQL do compose no ar): cobrem cada endpoint contra o MySQL de verdade, as constraints do banco e a disputa por horário com requisições simultâneas. Cada suíte recria do zero um banco próprio, `<DB_NAME>_test`, com o seed e as migrations. O banco de desenvolvimento não é tocado.
+- **Tela:** sem testes automatizados, por decisão de escopo. O fluxo de agendamento e os casos de erro foram verificados no navegador.
 - **CI** (GitHub Actions, a cada push e pull request): roda formatação, lint, estrutura, typecheck e testes unitários, e também os e2e contra um MySQL no próprio job.
 
 ## Estrutura
@@ -115,7 +130,12 @@ apps/
           shared/            persistência (datasource, migrations) e fuso de São Paulo
           __test__/          e2e, factories e suporte dos testes
         shared/              infraestrutura comum: config, context, auth, exception, http, logger, typeorm
-  web/                       Next.js 16: tela de agendamento (Parte 2)
+  web/                       Next.js 16: tela de agendamento
+    src/
+      app/                   layout, provedores (TanStack Query, usuário atual) e a página
+      modules/
+        schedule/            professional/, slot/, booking/: tipos, queries e componentes de cada conceito
+        shared/              cliente da API, usuário atual, fuso de São Paulo, alerta
 packages/                    presets compartilhados de ESLint e TypeScript
 infra/                       docker-compose.yml e seed.sql fornecido (não editado)
 scripts/                     validação da estrutura dos módulos
@@ -139,6 +159,9 @@ scripts/                     validação da estrutura dos módulos
 | winston                                    | Logs estruturados: JSON em produção, legível em desenvolvimento                                                                                             |
 | `@nestjs/swagger`                          | Documentação gerada dos DTOs, com os códigos de erro de cada rota                                                                                           |
 | Jest + supertest + knex                    | E2E pela API real; o knex prepara e confere dados sem passar pela aplicação                                                                                 |
+| Next.js 16 + React 19                      | Tela web: roda no navegador sem emulador nem build nativo; o proxy `/api` do Next fala com a API sem CORS                                                   |
+| TanStack Query                             | Estados de carregando e erro, cache e recarga de horários e sessões depois de agendar                                                                       |
+| Tailwind CSS 4                             | Estilo junto do componente, sem folha de estilos à parte                                                                                                    |
 | pnpm + Turborepo                           | API e web no mesmo repositório, com tarefas e cache por pacote                                                                                              |
 
 ## Decisões técnicas
@@ -229,6 +252,23 @@ scripts/                     validação da estrutura dos módulos
 - `HttpException` dentro dos services: acopla a regra ao HTTP.
 - try/catch em cada controller: repetição e risco de esquecer um caso.
 
+### 7. Frontend: React web, com as regras na API
+
+**Como:**
+
+- **Plataforma:** React web com Next.js. A avaliação roda no navegador, sem emulador nem build nativo, e o front usa o mesmo monorepo e o mesmo TypeScript da API.
+- **Dados:** os componentes rodam no cliente com TanStack Query e falam com a API pelo proxy `/api` do Next, então não há CORS. Depois de agendar, ou de uma recusa, recarregam horários e sessões. Erros de regra (4xx) não são repetidos.
+- **Regras na API:** o front só guia (data mínima hoje, botão desabilitado sem horário) e mostra a `message` da API com um título por `code`. Quando a API recusa, a seleção do horário é desfeita.
+- **Fuso:** tudo é exibido em `America/Sao_Paulo` com `Intl`, qualquer que seja o fuso do navegador. O "hoje" é calculado só no navegador, e a página é pré-renderizada como estática.
+- **Usuário:** um seletor com os usuários do seed, já que não há autenticação, enviado no `X-User-Id`.
+
+**Alternativas:**
+
+- React Native: exigiria emulador ou aparelho para avaliar uma tela de formulário.
+- Server Components com Server Actions: menos JavaScript no cliente, mas o fluxo é interativo e os estados de erro ficam mais simples no cliente.
+- `fetch` com `useEffect` e estado manual: reimplementaria cache, carregamento e recarga.
+- Converter horários pelo fuso do navegador: mostraria o horário errado para quem não está em São Paulo.
+
 Ref. NMU-7203
 
 ## Riscos e limites
@@ -238,10 +278,13 @@ Ref. NMU-7203
 - **Contenção:** um horário muito disputado enfileira as requisições no lock. Cada uma espera no máximo o `innodb_lock_wait_timeout` do servidor (50s por padrão), que vale ajustar para a experiência desejada.
 - **Escopo do domínio:** não há gestão de agenda dos profissionais. A duração do horário não é conferida com `session_minutes`, e `GET /me/bookings` não tem paginação.
 - **Usuário do banco:** o compose usa o `root` do seed. Em produção, seria um usuário próprio com permissões mínimas.
+- **Tela sem testes automatizados:** a verificação foi manual, no navegador.
+- **Usuários fixos na tela:** o seletor lista os quatro usuários do seed. Com autenticação real, ele deixa de existir.
 
 ## O que faria com mais tempo
 
-- Autenticação real e CORS conforme o frontend.
+- Autenticação real; o seletor de usuário da tela sai.
+- Testes e2e da tela com Playwright: fluxo de agendamento e mensagens de erro.
 - Chave de idempotência no `POST /bookings`, para retries do cliente não virarem um `SLOT_UNAVAILABLE` confuso.
 - Health check (`/health` com o banco) para o orquestrador e métricas e tracing com OpenTelemetry.
 - Migrations como job separado no pipeline de deploy.
