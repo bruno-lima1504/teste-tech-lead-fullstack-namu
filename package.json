@@ -15,7 +15,9 @@
     "test:unit": "turbo run test:unit",
     "test:e2e": "turbo run test:e2e",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "docker:up": "docker compose -f infra/docker-compose.yml up --build -d",
+    "docker:down": "docker compose -f infra/docker-compose.yml down"
   },
   "devDependencies": {
     "prettier": "catalog:",
