@@ -13,3 +13,6 @@ next-env.d.ts
 
 # logs
 *.log
+
+# artefatos do MCP do Playwright (snapshots, screenshots, logs)
+.playwright-mcp/
